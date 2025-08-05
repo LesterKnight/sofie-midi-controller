@@ -10,7 +10,7 @@ private:
   bool root = false;
 
 public:
-  static const int submenuLen = 4;
+  static const int submenuLen = 7;
   char name[15];
   Menu* submenu[submenuLen];
   int submenuCount = 0;
@@ -66,13 +66,22 @@ public:
     if (nodePos == -1) return;
 
     Menu* parentNode = cursor->parent;
-    if (move == 1 && validMove(move, nodePos)) {
+    if (move == 1 && validMove(move, nodePos)) {//next
       if (cursorLine == 0){
         cursorLine = 1;
       } 
       cursor = parentNode->submenu[nodePos + 1];
       renderMenu();
       Serial.println("move");
+    }
+    else if (move == 0 && validMove(move,nodePos)){
+      Serial.println("move back start");
+      if (cursorLine == 1){
+        cursorLine = 0;
+      }
+      cursor = parentNode->submenu[nodePos - 1];
+      renderMenu();
+      Serial.println("move back");
     }
   }
 
@@ -89,6 +98,9 @@ public:
     lcd.backlight();
     cursor = addChild("Laranja");
     addChild("Abacaxi");
+    addChild("Tamarindo");
+    addChild("pEsSeGo");
+    addChild("BANANA");
     addChild("VOLTAR");
     renderMenu();
   }
@@ -96,6 +108,8 @@ public:
   void renderMenu() {
     lcd.clear();
     int pos = calculateNodePos(cursor);
+
+
     if (cursorLine == 0) {
       lcd.setCursor(0, 0);
       lcd.print(">");
@@ -104,15 +118,15 @@ public:
         lcd.setCursor(0, 1);
         lcd.print(cursor->parent->submenu[pos + 1]->name);
       }
-    } else {
+    }
+    else if (cursorLine == 1){
+      lcd.setCursor(0, 0);
+      lcd.print(cursor->parent->submenu[pos - 1]->name);
       lcd.setCursor(0, 1);
       lcd.print(">");
       lcd.print(cursor->name);
-      if (pos - 1 >= 0) {
-        lcd.setCursor(0, 0);
-        lcd.print(cursor->parent->submenu[pos - 1]->name);
-      }
     }
   }
+  
 };
 LiquidCrystal_I2C Menu::lcd(0x27, 16, 2);
