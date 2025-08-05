@@ -5,7 +5,7 @@
 const int BTN_THRESHOLD = 25;
 const int BTN_1_PIN = 2;
 Bounce debouncer = Bounce();
-int time = 2500;
+int time = 1500;
 Menu menu;
 void setup() {
   Serial.begin(31250);
@@ -14,29 +14,15 @@ void setup() {
   debouncer.interval(BTN_THRESHOLD);
   menu.init();
 
+  for (int i = 0; i < 8; i++) {
+    menu.navigate(NEXT);
+    delay(time);
+  }
 
-    menu.navigate(1);
+  for (int i = 0; i < 8; i++) {
+    menu.navigate(PREVIOUS);
     delay(time);
-    menu.navigate(1);
-    delay(time);
-    menu.navigate(1);
-    delay(time);
-    menu.navigate(1);
-    delay(time);
-    menu.navigate(1);
-    delay(time);
-
-    
-    menu.navigate(0);
-    delay(time);
-    menu.navigate(0);
-    delay(time);
-    menu.navigate(0);
-    delay(time);
-    menu.navigate(0);
-    delay(time);
-    menu.navigate(0);
-    delay(time);
+  }
 
 
 }

@@ -2,6 +2,13 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 
+enum MenuActions {
+  NEXT,
+  PREVIOUS,
+  ENTER,
+  BACK
+};
+
 class Menu {
 private:
   Menu* cursor = nullptr;
@@ -52,38 +59,35 @@ public:
     return -1;
   }
 
-  bool validMove(int move, int nodePos) {
-    if (move == 1)
-      return (nodePos + 1) < parent->length()-1;
-    else if (move == 0)
-      return (nodePos - 1) >= 0;
-    else
-      return false;
-  }
+bool validMove(MenuActions move, int nodePos) {
+  if (move == NEXT)
+    return (nodePos + 1) < parent->length()-1;
+  else if (move == PREVIOUS)
+    return (nodePos - 1) >= 0;
+  else
+    return false;
+}
 
-  void navigate(int move) {
-    int nodePos = calculateNodePos(cursor);
-    if (nodePos == -1) return;
+void navigate(MenuActions move) {
+  int nodePos = calculateNodePos(cursor);
+  if (nodePos == -1) return;
 
-    Menu* parentNode = cursor->parent;
-    if (move == 1 && validMove(move, nodePos)) {//next
-      if (cursorLine == 0){
-        cursorLine = 1;
-      } 
-      cursor = parentNode->submenu[nodePos + 1];
-      renderMenu();
-      Serial.println("move");
-    }
-    else if (move == 0 && validMove(move,nodePos)){
-      Serial.println("move back start");
-      if (cursorLine == 1){
-        cursorLine = 0;
-      }
-      cursor = parentNode->submenu[nodePos - 1];
-      renderMenu();
-      Serial.println("move back");
-    }
+  Menu* parentNode = cursor->parent;
+
+  if (move == NEXT && validMove(move, nodePos)) {
+    if (cursorLine == 0) cursorLine = 1;
+    cursor = parentNode->submenu[nodePos + 1];
+    renderMenu();
+    Serial.println("move");
+  } 
+  else if (move == PREVIOUS && validMove(move, nodePos)) {
+    Serial.println("move back start");
+    if (cursorLine == 1) cursorLine = 0;
+    cursor = parentNode->submenu[nodePos - 1];
+    renderMenu();
+    Serial.println("move back");
   }
+}
 
   Menu* addChild(const char* label) {
     if (submenuCount >= submenuLen) return nullptr;
