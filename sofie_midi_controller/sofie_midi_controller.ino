@@ -1,11 +1,12 @@
 #include <Wire.h>
 #include <Bounce2.h>
-#include "./display.h"
+#include "./menu.h"
 
 const int BTN_THRESHOLD = 25;
 const int BTN_1_PIN = 2;
+
 Bounce debouncer = Bounce();
-int time = 1500;
+int time = 200;
 Menu menu;
 void setup() {
   Serial.begin(31250);
@@ -14,17 +15,18 @@ void setup() {
   debouncer.interval(BTN_THRESHOLD);
   menu.init();
 
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 3; i++) {
     menu.navigate(NEXT);
     delay(time);
   }
-
-  for (int i = 0; i < 8; i++) {
-    menu.navigate(PREVIOUS);
+  menu.navigate(ENTER);
+  for (int i = 0; i < 4; i++) {
+    menu.navigate(NEXT);
     delay(time);
   }
-
-
+  delay(5000);
+  menu.navigate(ENTER);
+  
 }
 
 void loop() {
