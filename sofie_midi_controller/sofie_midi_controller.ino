@@ -2,35 +2,37 @@
 #include <Bounce2.h>
 #include "./menu.h"
 
-const int BTN_THRESHOLD = 25;
-const int BTN_1_PIN = 2;
-
 Bounce debouncer = Bounce();
-int time = 200;
 Menu menu;
+const int BTN_THRESHOLD = 25;
+const int pinA = 2;  // Pino A (CLK)
+const int pinB = 3;  // Pino B (DT)
+const int pinSW = 4;  // Pino SW
+int lastCLK = HIGH;
+
 void setup() {
   Serial.begin(31250);
-  pinMode(BTN_1_PIN, INPUT_PULLUP);
-  debouncer.attach(BTN_1_PIN); 
+  pinMode(pinSW, INPUT_PULLUP);
+  pinMode(pinA, INPUT_PULLUP);
+  pinMode(pinB, INPUT_PULLUP);
+  debouncer.attach(pinSW); 
   debouncer.interval(BTN_THRESHOLD);
   menu.init();
-
-  for (int i = 0; i < 3; i++) {
-    menu.navigate(NEXT);
-    delay(time);
-  }
-  menu.navigate(ENTER);
-  for (int i = 0; i < 4; i++) {
-    menu.navigate(NEXT);
-    delay(time);
-  }
-  delay(5000);
-  menu.navigate(ENTER);
-  
 }
 
 void loop() {
+  int currentCLK = digitalRead(pinA);
+    if (currentCLK != lastCLK && currentCLK == LOW) {
+      if (digitalRead(pinB) != currentCLK) {
+        menu.navigate(NEXT);
+      } else {
+        menu.navigate(PREVIOUS);
+      }
+    }
+  lastCLK = currentCLK;
+
   debouncer.update();
-  if (debouncer.fell()) {  
+  if (debouncer.fell()) {
+    menu.navigate(ENTER);
   }
 }

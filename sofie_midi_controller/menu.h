@@ -15,6 +15,25 @@
     BACK
   };
 
+byte arrow[8] = {
+  B00000,
+  B00100,
+  B00110,
+  B11111,
+  B00110,
+  B00100,
+  B00000,
+  B00000
+};
+
+void setCursor(int line, LiquidCrystal_I2C lcd){
+  if(line<2){
+    lcd.createChar(0, arrow); // cria o caractere no slot 0
+    lcd.setCursor(0, line);
+    lcd.write(byte(0)); // desenha a flecha
+  }
+}
+
 class Menu {
 private:
   static Menu* cursor;
@@ -55,8 +74,7 @@ private:
     lcd.clear();
     int pos = calculateNodePos(cursor);
     if (cursorLine == 0) {
-      lcd.setCursor(0, 0);
-      lcd.print(".");
+      setCursor(0, lcd);
       lcd.print(cursor->name);
       if (pos + 1 < cursor->parent->submenuCount) {
         lcd.setCursor(0, 1);
@@ -66,8 +84,7 @@ private:
     else if (cursorLine == 1){
       lcd.setCursor(0, 0);
       lcd.print(cursor->parent->submenu[pos - 1]->name);
-      lcd.setCursor(0, 1);
-      lcd.print(".");
+      setCursor(1, lcd);
       lcd.print(cursor->name);
     }
   }
