@@ -15,24 +15,11 @@
     BACK
   };
 
-byte arrow[8] = {
-  B00000,
-  B00100,
-  B00110,
-  B11111,
-  B00110,
-  B00100,
-  B00000,
-  B00000
-};
-
-void setCursor(int line, LiquidCrystal_I2C lcd){
-  if(line<2){
-    lcd.createChar(0, arrow); // cria o caractere no slot 0
-    lcd.setCursor(0, line);
-    lcd.write(byte(0)); // desenha a flecha
-  }
-}
+    enum MenuMode {
+    PRESET,
+    MENU,
+    PARAM,
+  };
 
 class Menu {
 private:
@@ -41,10 +28,18 @@ private:
   static LiquidCrystal_I2C lcd;
   MenuType type;
 
+
+  void setCursorArrow(){
+    byte arrow[8] = {B00000, B00100, B00110, B11111, B00110, B00100, B00000, B00000};
+    if(cursorLine<2){
+      lcd.createChar(0, arrow);
+      lcd.setCursor(0, cursorLine);
+      lcd.write(byte(0));
+    }
+  }
   static bool nodeExists(Menu* node) {
     return node != nullptr && node->parent != nullptr;
   }
-
   static int calculateNodePos(Menu* node) {
     if (!nodeExists(node)) return -1;
     Menu* parent = node->parent;
@@ -54,7 +49,6 @@ private:
     }
     return -1;
   }
-
   bool validMove(MenuActions move, int nodePos) {
     if (move == NEXT)
       return (nodePos + 1) < cursor->parent->submenuCount;
@@ -69,12 +63,11 @@ private:
     else
       return false;
   }
-
   void renderMenu() {
     lcd.clear();
     int pos = calculateNodePos(cursor);
     if (cursorLine == 0) {
-      setCursor(0, lcd);
+      setCursorArrow();
       lcd.print(cursor->name);
       if (pos + 1 < cursor->parent->submenuCount) {
         lcd.setCursor(0, 1);
@@ -84,10 +77,24 @@ private:
     else if (cursorLine == 1){
       lcd.setCursor(0, 0);
       lcd.print(cursor->parent->submenu[pos - 1]->name);
-      setCursor(1, lcd);
+      setCursorArrow();
       lcd.print(cursor->name);
     }
   }
+
+  void setIntParam(){
+    byte char0[8] = {0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000}; // empty
+    byte char4[8] = {0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000}; // 25%
+    byte char5[8] = {0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000}; // 50%
+    byte char6[8] = {0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100}; // 75%
+    byte char7[8] = {0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111}; // 100%
+
+
+
+  }
+
+
+
 
 public:
   static const int submenuLen = 10;
@@ -103,25 +110,26 @@ public:
     for (int i = 0; i < submenuLen; i++) submenu[i] = nullptr;
     type = (parentNode == nullptr) ? ROOT : menuType;
   }
-
   void init(){
     lcd.init();
     lcd.clear();
     lcd.backlight();
 
-    cursor = addSubmenu("VEGETABLES");
-    addSubmenu("NACHO");
-    addSubmenu("TACO");
-    Menu* frutas = addSubmenu("FRUIT");
-    frutas->addSubmenu("PINEAPLE");
-    frutas->addSubmenu("PEACH");
-    frutas->addSubmenu("GRAPE");
-    frutas->addBackBtn();
-
+    Menu* volume;
+    volume = addSubmenu("Volume");
+      volume->addSubmenu("Main");
+      volume->addSubmenu("Boost");
+      volume->addBackBtn();
+    cursor = volume;
+    addSubmenu("Delay");
+    addSubmenu("Chrous");
+    addSubmenu("Midi Channel");
+    addSubmenu("Save");
+    addSubmenu("_Exit");
     renderMenu();
   }
   void navigate(MenuActions move) {
-    int nodePos = calculateNodePos(cursor);//remover validmove da loogica, rendermenu para o fim
+    int nodePos = calculateNodePos(cursor);
     if (nodePos == -1 || !validMove(move, nodePos)) return;
     Menu* parentNode = cursor->parent;
 
@@ -134,6 +142,8 @@ public:
         else if (cursor->type == BACK){
           cursor = parentNode->parent->submenu[0];
           cursorLine = 0;
+        }
+        else if(cursor->type == FUNCTION){
         }
         break;
 
@@ -153,20 +163,17 @@ public:
         renderMenu();
         delay(300);
   }
-
   Menu* addSubmenu(const char* label) {
     if (submenuCount >= submenuLen) return nullptr;
     Menu* child = new Menu( label, this);
     submenu[submenuCount++] = child;
     return child;
   }
-
   void addBackBtn() {
     if (submenuCount >= submenuLen && type != SUBMENU) return;
     Menu* backBtn = new Menu( "_BACK", this, BACK);
     submenu[submenuCount++] = backBtn;
   }
-
 };
 LiquidCrystal_I2C Menu::lcd(0x27, 16, 2);
 Menu* Menu::cursor = nullptr;
