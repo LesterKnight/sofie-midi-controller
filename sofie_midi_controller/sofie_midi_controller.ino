@@ -6,8 +6,8 @@
 Bounce debouncer = Bounce();
 Menu display;
 const int BTN_THRESHOLD = 25;
-const int pinA = 2;  // Pin A (CLK)
-const int pinB = 3;  // Pin B (DT)
+const int pinA = 2;   // Pin A (CLK)
+const int pinB = 3;   // Pin B (DT)
 const int pinSW = 4;  // Pin SW
 int lastCLK = HIGH;
 
@@ -18,44 +18,46 @@ void setup() {
   pinMode(pinSW, INPUT_PULLUP);
   pinMode(pinA, INPUT_PULLUP);
   pinMode(pinB, INPUT_PULLUP);
-  debouncer.attach(pinSW); 
+  debouncer.attach(pinSW);
   debouncer.interval(BTN_THRESHOLD);
   display.init();
-  display.renderPatch(tonex);
 }
-
 void loop() {
-  if(display.mode() == MENU){
-    int currentCLK = digitalRead(pinA);
-      if (currentCLK != lastCLK && currentCLK == LOW) {
-        if (digitalRead(pinB) != currentCLK) {
-          display.navigate(NEXT);
-        } else {
-          display.navigate(PREVIOUS);
-        }
-      }
-    lastCLK = currentCLK;
-    debouncer.update();
-    if (debouncer.fell()) {
-      display.navigate(ENTER);
+  int currentCLK = digitalRead(pinA);
+  debouncer.update();
+  if (debouncer.fell()) {  //BOTAO
+    switch (display.mode()) {
+      case PRESET:
+        display.openMenu();
+        break;
+      case MENU:
+        display.navigate(ENTER);
+        break;
     }
   }
-
-  if(display.mode() == PRESET){
-      int currentCLK = digitalRead(pinA);
-      if (currentCLK != lastCLK && currentCLK == LOW) {
-        if (digitalRead(pinB) != currentCLK) {
-          tonex.nextPatch();
-          delay(100);
-          Serial.println(i++);
-        } else {
-          tonex.prevPatch();
-          delay(100);
-          Serial.println(i--);
-        }
-      }
-    if(tonex.patchHasChanged())
-        display.renderPatch(tonex);
+  //-----------------MENU SCREEN----------------------
+  if (display.mode() == MENU) {
+    if (currentCLK != lastCLK && currentCLK == LOW) {
+      if (digitalRead(pinB) != currentCLK)
+        display.navigate(NEXT);
+      else
+        display.navigate(PREVIOUS);
+    }
   }
-
+  //-----------------PRESET SCREEN----------------------
+  if (display.mode() == PRESET) {
+    if (currentCLK != lastCLK && currentCLK == LOW) {
+      if (digitalRead(pinB) != currentCLK) {
+        //tonex.nextPatch();
+        //delay(100);
+      } else {
+        //tonex.prevPatch();
+        //delay(100);
+      }
+    }
+    if (tonex.patchHasChanged() || display.modeHasChanged())
+      display.renderPresetScreen();
+  }
+  //-----------------PRESET SCREEN----------------------
+  lastCLK = currentCLK;
 }

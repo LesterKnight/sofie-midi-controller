@@ -3,36 +3,37 @@
 #include <LiquidCrystal_I2C.h>
 #include "./Tonex.h"
 
-  enum MenuActions {
-    NEXT,
-    PREVIOUS,
-    ENTER
-  };
+enum MenuActions {
+  NEXT,
+  PREVIOUS,
+  ENTER
+};
 
-  enum MenuType {
-    ROOT,
-    SUBMENU,
-    FUNCTION,
-    BACK
-  };
+enum MenuType {
+  ROOT,
+  SUBMENU,
+  FUNCTION,
+  BACK
+};
 
-  enum MenuMode {
-    PRESET,
-    MENU,
-    PARAM,
-  };
+enum MenuMode {
+  PRESET,
+  MENU,
+  PARAM,
+};
 
 class Menu {
 private:
   static Menu* cursor;
   static MenuMode status;
+  static MenuMode previousStatus;
   int cursorLine = 0;
   static LiquidCrystal_I2C lcd;
   MenuType type;
 
-  void setCursorArrow(){
-    byte arrow[8] = {B00000, B00100, B00110, B11111, B00110, B00100, B00000, B00000};
-    if(cursorLine<2){
+  void setCursorArrow() {
+    byte arrow[8] = { B00000, B00100, B00110, B11111, B00110, B00100, B00000, B00000 };
+    if (cursorLine < 2) {
       lcd.createChar(0, arrow);
       lcd.setCursor(0, cursorLine);
       lcd.write(byte(0));
@@ -55,26 +56,17 @@ private:
       return (nodePos + 1) < cursor->parent->submenuCount;
     else if (move == PREVIOUS)
       return (nodePos - 1) >= 0;
-    else if (move == ENTER &&
-    ( 
-      cursor->type == SUBMENU||
-      cursor->type == FUNCTION||
-      cursor->type == BACK
-    )) return true;
+    else if (move == ENTER && (cursor->type == SUBMENU || cursor->type == FUNCTION || cursor->type == BACK)) return true;
     else
       return false;
   }
-  void setIntParam(){
-    byte char0[8] = {0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000}; // empty
-    byte char4[8] = {0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000}; // 25%
-    byte char5[8] = {0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000}; // 50%
-    byte char6[8] = {0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100}; // 75%
-    byte char7[8] = {0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111}; // 100%
-
-
-
+  void setIntParam() {
+    byte char0[8] = { 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000 };  // empty
+    byte char4[8] = { 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000 };  // 25%
+    byte char5[8] = { 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000 };  // 50%
+    byte char6[8] = { 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100 };  // 75%
+    byte char7[8] = { 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111 };  // 100%
   }
-
 
 
 
@@ -92,61 +84,32 @@ public:
     for (int i = 0; i < submenuLen; i++) submenu[i] = nullptr;
     type = (parentNode == nullptr) ? ROOT : menuType;
   }
-  MenuMode mode(){
+  MenuMode mode() {
     return Menu::status;
   }
-  void init(){
+  bool modeHasChanged() {
+    if (Menu::status != Menu::previousStatus) {
+      Menu::previousStatus = Menu::status;
+      return true;
+    }
+    return false;
+  }
+  void init() {
     lcd.init();
     lcd.clear();
     lcd.backlight();
 
     Menu* volume;
     volume = addSubmenu("Volume");
-      volume->addSubmenu("Main");
-      volume->addSubmenu("Boost");
-      volume->addBackBtn();
+    volume->addSubmenu("Main");
+    volume->addSubmenu("Boost");
+    volume->addBackBtn();
     cursor = volume;
     addSubmenu("Delay");
     addSubmenu("Chrous");
     addSubmenu("Midi Channel");
     addSubmenu("Save");
-    addSubmenu("_Exit");
-    //renderMenu();
-  }
-  void navigate(MenuActions move) {
-    int nodePos = calculateNodePos(cursor);
-    if (nodePos == -1 || !validMove(move, nodePos)) return;
-    Menu* parentNode = cursor->parent;
-
-    switch (move) {
-      case ENTER:
-        if(cursor->type == SUBMENU && cursor->submenuCount >0){
-          cursor = cursor->submenu[0];
-          cursorLine = 0;
-        }
-        else if (cursor->type == BACK){
-          cursor = parentNode->parent->submenu[0];
-          cursorLine = 0;
-        }
-        else if(cursor->type == FUNCTION){
-        }
-        break;
-
-      case NEXT:
-        if (cursorLine == 0) cursorLine = 1;
-        cursor = parentNode->submenu[nodePos + 1];
-        break;
-
-      case PREVIOUS:
-        if (cursorLine == 1) cursorLine = 0;
-        cursor = parentNode->submenu[nodePos - 1];
-        break;
-
-      default:
-        return;
-    }
-        renderMenu();
-        delay(300);
+    addBackBtn();
   }
   void renderMenu() {
     lcd.clear();
@@ -158,33 +121,83 @@ public:
         lcd.setCursor(0, 1);
         lcd.print(cursor->parent->submenu[pos + 1]->name);
       }
-    }
-    else if (cursorLine == 1){
+    } else if (cursorLine == 1) {
       lcd.setCursor(0, 0);
       lcd.print(cursor->parent->submenu[pos - 1]->name);
       setCursorArrow();
       lcd.print(cursor->name);
     }
   }
-  void renderPatch(TonexController tonex){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    char patchName[4];
-    tonex.getPatchName(patchName);
-    lcd.print(patchName);
-  }
   Menu* addSubmenu(const char* label) {
     if (submenuCount >= submenuLen) return nullptr;
-    Menu* child = new Menu( label, this);
+    Menu* child = new Menu(label, this);
     submenu[submenuCount++] = child;
     return child;
   }
   void addBackBtn() {
     if (submenuCount >= submenuLen && type != SUBMENU) return;
-    Menu* backBtn = new Menu( "_BACK", this, BACK);
+    Menu* backBtn = new Menu("_BACK", this, BACK);
     submenu[submenuCount++] = backBtn;
   }
+  void openMenu() {
+    cursorLine = 0;
+    cursor = submenu[0];
+    status = MENU;
+    renderMenu();
+  }
+  void renderPresetScreen() {  //TonexController tonex
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    //char patchName[4];
+    //tonex.getPatchName(patchName);
+    lcd.print("AAAAAAA");
+    cursorLine = 0;
+    status = PRESET;
+  }
+  void navigate(MenuActions move) {
+    if (mode() == MENU) {
+      int nodePos = calculateNodePos(cursor);
+      if (nodePos == -1 || !validMove(move, nodePos)) return;
+      Menu* parentNode = cursor->parent;
+      switch (move) {
+        case ENTER:
+          {
+            if (cursor->type == SUBMENU && cursor->submenuCount > 0) {
+              cursor = cursor->submenu[0];
+              cursorLine = 0;
+              renderMenu();
+            } else if (cursor->type == BACK) {
+              if (parentNode->type == ROOT) {
+                cursor = submenu[0];
+                renderPresetScreen();
+              } else {
+                cursor = parentNode->parent->submenu[0];
+                cursorLine = 0;
+                renderMenu();
+              }
+            }
+            delay(300);
+          }
+          break;
+        case NEXT:
+          {
+            if (cursorLine == 0) cursorLine = 1;
+            cursor = parentNode->submenu[nodePos + 1];
+            renderMenu();
+          }
+          break;
+
+        case PREVIOUS:
+          if (cursorLine == 1) cursorLine = 0;
+          cursor = parentNode->submenu[nodePos - 1];
+          renderMenu();
+          break;
+      }
+    }
+  }
 };
+
 LiquidCrystal_I2C Menu::lcd(0x27, 16, 2);
 Menu* Menu::cursor = nullptr;
 MenuMode Menu::status = PRESET;
+MenuMode Menu::previousStatus = MENU;
