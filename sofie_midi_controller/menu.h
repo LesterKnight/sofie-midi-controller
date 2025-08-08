@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
+#include "./Tonex.h"
 
   enum MenuActions {
     NEXT,
@@ -15,7 +16,7 @@
     BACK
   };
 
-    enum MenuMode {
+  enum MenuMode {
     PRESET,
     MENU,
     PARAM,
@@ -24,10 +25,10 @@
 class Menu {
 private:
   static Menu* cursor;
+  static MenuMode status;
   int cursorLine = 0;
   static LiquidCrystal_I2C lcd;
   MenuType type;
-
 
   void setCursorArrow(){
     byte arrow[8] = {B00000, B00100, B00110, B11111, B00110, B00100, B00000, B00000};
@@ -63,25 +64,6 @@ private:
     else
       return false;
   }
-  void renderMenu() {
-    lcd.clear();
-    int pos = calculateNodePos(cursor);
-    if (cursorLine == 0) {
-      setCursorArrow();
-      lcd.print(cursor->name);
-      if (pos + 1 < cursor->parent->submenuCount) {
-        lcd.setCursor(0, 1);
-        lcd.print(cursor->parent->submenu[pos + 1]->name);
-      }
-    }
-    else if (cursorLine == 1){
-      lcd.setCursor(0, 0);
-      lcd.print(cursor->parent->submenu[pos - 1]->name);
-      setCursorArrow();
-      lcd.print(cursor->name);
-    }
-  }
-
   void setIntParam(){
     byte char0[8] = {0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000}; // empty
     byte char4[8] = {0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000}; // 25%
@@ -110,6 +92,9 @@ public:
     for (int i = 0; i < submenuLen; i++) submenu[i] = nullptr;
     type = (parentNode == nullptr) ? ROOT : menuType;
   }
+  MenuMode mode(){
+    return Menu::status;
+  }
   void init(){
     lcd.init();
     lcd.clear();
@@ -126,7 +111,7 @@ public:
     addSubmenu("Midi Channel");
     addSubmenu("Save");
     addSubmenu("_Exit");
-    renderMenu();
+    //renderMenu();
   }
   void navigate(MenuActions move) {
     int nodePos = calculateNodePos(cursor);
@@ -163,6 +148,31 @@ public:
         renderMenu();
         delay(300);
   }
+  void renderMenu() {
+    lcd.clear();
+    int pos = calculateNodePos(cursor);
+    if (cursorLine == 0) {
+      setCursorArrow();
+      lcd.print(cursor->name);
+      if (pos + 1 < cursor->parent->submenuCount) {
+        lcd.setCursor(0, 1);
+        lcd.print(cursor->parent->submenu[pos + 1]->name);
+      }
+    }
+    else if (cursorLine == 1){
+      lcd.setCursor(0, 0);
+      lcd.print(cursor->parent->submenu[pos - 1]->name);
+      setCursorArrow();
+      lcd.print(cursor->name);
+    }
+  }
+  void renderPatch(TonexController tonex){
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    char patchName[4];
+    tonex.getPatchName(patchName);
+    lcd.print(patchName);
+  }
   Menu* addSubmenu(const char* label) {
     if (submenuCount >= submenuLen) return nullptr;
     Menu* child = new Menu( label, this);
@@ -177,3 +187,4 @@ public:
 };
 LiquidCrystal_I2C Menu::lcd(0x27, 16, 2);
 Menu* Menu::cursor = nullptr;
+MenuMode Menu::status = PRESET;

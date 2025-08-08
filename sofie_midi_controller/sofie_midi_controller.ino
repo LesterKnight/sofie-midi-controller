@@ -1,15 +1,18 @@
 #include <Wire.h>
 #include <Bounce2.h>
-#include "./menu.h"
+#include "./Menu.h"
+#include "./Tonex.h"
 
 Bounce debouncer = Bounce();
-Menu menu;
+Menu display;
 const int BTN_THRESHOLD = 25;
-const int pinA = 2;  // Pino A (CLK)
-const int pinB = 3;  // Pino B (DT)
-const int pinSW = 4;  // Pino SW
+const int pinA = 2;  // Pin A (CLK)
+const int pinB = 3;  // Pin B (DT)
+const int pinSW = 4;  // Pin SW
 int lastCLK = HIGH;
 
+TonexController tonex;
+int i = 0;
 void setup() {
   Serial.begin(31250);
   pinMode(pinSW, INPUT_PULLUP);
@@ -17,22 +20,42 @@ void setup() {
   pinMode(pinB, INPUT_PULLUP);
   debouncer.attach(pinSW); 
   debouncer.interval(BTN_THRESHOLD);
-  menu.init();
+  display.init();
+  display.renderPatch(tonex);
 }
 
 void loop() {
-  int currentCLK = digitalRead(pinA);
-    if (currentCLK != lastCLK && currentCLK == LOW) {
-      if (digitalRead(pinB) != currentCLK) {
-        menu.navigate(NEXT);
-      } else {
-        menu.navigate(PREVIOUS);
+  if(display.mode() == MENU){
+    int currentCLK = digitalRead(pinA);
+      if (currentCLK != lastCLK && currentCLK == LOW) {
+        if (digitalRead(pinB) != currentCLK) {
+          display.navigate(NEXT);
+        } else {
+          display.navigate(PREVIOUS);
+        }
       }
+    lastCLK = currentCLK;
+    debouncer.update();
+    if (debouncer.fell()) {
+      display.navigate(ENTER);
     }
-  lastCLK = currentCLK;
-
-  debouncer.update();
-  if (debouncer.fell()) {
-    menu.navigate(ENTER);
   }
+
+  if(display.mode() == PRESET){
+      int currentCLK = digitalRead(pinA);
+      if (currentCLK != lastCLK && currentCLK == LOW) {
+        if (digitalRead(pinB) != currentCLK) {
+          tonex.nextPatch();
+          delay(100);
+          Serial.println(i++);
+        } else {
+          tonex.prevPatch();
+          delay(100);
+          Serial.println(i--);
+        }
+      }
+    if(tonex.patchHasChanged())
+        display.renderPatch(tonex);
+  }
+
 }
