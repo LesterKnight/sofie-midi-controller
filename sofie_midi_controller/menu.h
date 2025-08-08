@@ -60,12 +60,50 @@ private:
     else
       return false;
   }
-  void setIntParam() {
+
+  void printProgressBar(int percent) {
+    int totalBlocks = 16;  // large
+    float blocks = (percent / 100.0) * totalBlocks;
+    int fullBlocks = (int)blocks;
+    float remainder = blocks - fullBlocks;
+
+    lcd.setCursor(0, 1);
+    for (int i = 0; i < totalBlocks; i++) {
+      if (i < fullBlocks) {
+        lcd.write(7);  // FULL
+      } else if (i == fullBlocks) {
+        if (remainder < 0.25) lcd.write(0);       // EMPTY
+        else if (remainder < 0.5) lcd.write(4);   // 25%
+        else if (remainder < 0.75) lcd.write(5);  // 50%
+        else lcd.write(6);                        // 75%
+      } else {
+        lcd.write(0);
+      }
+    }
+  }
+
+  void setIntParam(int val) {
+    int min = 0;
+    int max = 127;
+    int newVal = (val * 127) / max;
+
     byte char0[8] = { 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000 };  // empty
     byte char4[8] = { 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000 };  // 25%
     byte char5[8] = { 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000 };  // 50%
     byte char6[8] = { 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100 };  // 75%
     byte char7[8] = { 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111 };  // 100%
+
+    lcd.createChar(0, char0);
+    lcd.createChar(4, char4);
+    lcd.createChar(5, char5);
+    lcd.createChar(6, char6);
+    lcd.createChar(7, char7);
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("SET PARAM: ");
+    lcd.print(newVal);
+    printProgressBar(newVal);
   }
 
 
