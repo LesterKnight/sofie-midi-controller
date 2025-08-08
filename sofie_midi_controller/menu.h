@@ -145,13 +145,13 @@ public:
     status = MENU;
     renderMenu();
   }
-  void renderPresetScreen() {  //TonexController tonex
+  void renderPresetScreen() {
     lcd.clear();
     lcd.setCursor(0, 0);
-    //char patchName[4];
-    //tonex.getPatchName(patchName);
-    lcd.print("AAAAAAA");
+    char patchName[4];
+    TonexController::getPatchName(patchName);
     cursorLine = 0;
+    lcd.print(patchName);
     status = PRESET;
   }
   void navigate(MenuActions move) {

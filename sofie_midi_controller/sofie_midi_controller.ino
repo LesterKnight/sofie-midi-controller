@@ -11,7 +11,6 @@ const int pinB = 3;   // Pin B (DT)
 const int pinSW = 4;  // Pin SW
 int lastCLK = HIGH;
 
-TonexController tonex;
 int i = 0;
 void setup() {
   Serial.begin(31250);
@@ -48,14 +47,12 @@ void loop() {
   if (display.mode() == PRESET) {
     if (currentCLK != lastCLK && currentCLK == LOW) {
       if (digitalRead(pinB) != currentCLK) {
-        //tonex.nextPatch();
-        //delay(100);
+        TonexController::nextPatch();
       } else {
-        //tonex.prevPatch();
-        //delay(100);
+        TonexController::prevPatch();
       }
     }
-    if (tonex.patchHasChanged() || display.modeHasChanged())
+    if (TonexController::patchHasChanged() || display.modeHasChanged())
       display.renderPresetScreen();
   }
   //-----------------PRESET SCREEN----------------------
