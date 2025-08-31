@@ -79,7 +79,7 @@ private:
     float blocks = (percent / 100.0) * totalBlocks;
     int fullBlocks = (int)blocks;
     float remainder = blocks - fullBlocks;
-  
+
     lcd.setCursor(0, 1);
     for (int i = 0; i < totalBlocks; i++) {
       if (i < fullBlocks) {
@@ -162,7 +162,7 @@ public:
     submenu[submenuCount++] = child;
     return child;
   }
-  Menu* addParameter(const char* label, int &val) {
+  Menu* addParameter(const char* label, int& val) {
     if (submenuCount >= submenuLen) return nullptr;
     Menu* child = new Menu(label, this);
     child->parameter = val;
@@ -203,8 +203,8 @@ public:
               cursorLine = 0;
               renderMenu();
             } else if (cursor->type == SUBMENU && cursor->isParameter) {
-                status = PARAM;
-                setIntParam(cursor->parameter);
+              status = PARAM;
+              setIntParam(cursor->parameter);
             } else if (cursor->type == BACK) {
               if (parentNode->type == ROOT) {
                 cursor = submenu[0];
@@ -237,31 +237,27 @@ public:
   void setIntParam(int val) {
     //char* buffer
     int max = 127;
-    if(val == 1){
-      cursor->parameter+=10;
-    }      
-    else{
-      cursor->parameter-=10;
+    if (val == 1) {
+      cursor->parameter += 10;
+    } else {
+      cursor->parameter -= 10;
     }
-      
 
-    if(cursor->parameter<0){
+    if (cursor->parameter < 0) {
       cursor->parameter = 0;
     }
-    
-    if(cursor->parameter>max){
+    if (cursor->parameter > max) {
       cursor->parameter = max;
     }
-      
-
-      int newVal = (cursor->parameter * 100) / max;
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print(cursor->name);
-      lcd.print(": ");
-      lcd.print(newVal);
-      renderProgressBar(newVal);
-    
+    int newVal = (cursor->parameter * 100) / max;
+    lcd.setCursor(0, 0);
+    lcd.write("                ");
+    lcd.setCursor(0, 0);
+    lcd.print(cursor->name);
+    lcd.print(": ");
+    lcd.print(newVal);
+    lcd.print("   ");
+    renderProgressBar(newVal);
   }
 };
 
