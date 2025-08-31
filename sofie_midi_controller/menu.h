@@ -24,12 +24,13 @@ enum MenuMode {
 
 class Menu {
 private:
-  static Menu* cursor;
   static MenuMode status;
   static MenuMode previousStatus;
   int cursorLine = 0;
   static LiquidCrystal_I2C lcd;
   MenuType type;
+  int parameter = 0;
+  bool isParameter = false;
 
   void setCursorArrow() {
     byte arrow[8] = { B00000, B00100, B00110, B11111, B00110, B00100, B00000, B00000 };
@@ -61,12 +62,24 @@ private:
       return false;
   }
 
-  void printProgressBar(int percent) {
+  void renderProgressBar(int percent) {
+    byte char0[8] = { 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000 };  // empty
+    byte char4[8] = { 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000 };  // 25%
+    byte char5[8] = { 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000 };  // 50%
+    byte char6[8] = { 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100 };  // 75%
+    byte char7[8] = { 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111 };  // 100%
+
+    lcd.createChar(0, char0);
+    lcd.createChar(4, char4);
+    lcd.createChar(5, char5);
+    lcd.createChar(6, char6);
+    lcd.createChar(7, char7);
+
     int totalBlocks = 16;  // large
     float blocks = (percent / 100.0) * totalBlocks;
     int fullBlocks = (int)blocks;
     float remainder = blocks - fullBlocks;
-
+  
     lcd.setCursor(0, 1);
     for (int i = 0; i < totalBlocks; i++) {
       if (i < fullBlocks) {
@@ -82,33 +95,10 @@ private:
     }
   }
 
-  void setIntParam(int val) {
-    int min = 0;
-    int max = 127;
-    int newVal = (val * 127) / max;
-
-    byte char0[8] = { 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000 };  // empty
-    byte char4[8] = { 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000 };  // 25%
-    byte char5[8] = { 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000, 0b11000 };  // 50%
-    byte char6[8] = { 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100 };  // 75%
-    byte char7[8] = { 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111 };  // 100%
-
-    lcd.createChar(0, char0);
-    lcd.createChar(4, char4);
-    lcd.createChar(5, char5);
-    lcd.createChar(6, char6);
-    lcd.createChar(7, char7);
-
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("SET PARAM: ");
-    lcd.print(newVal);
-    printProgressBar(newVal);
-  }
-
 
 
 public:
+  static Menu* cursor;
   static const int submenuLen = 10;
   char name[15];
   Menu* submenu[submenuLen];
@@ -140,7 +130,7 @@ public:
     Menu* volume;
     volume = addSubmenu("Volume");
     volume->addSubmenu("Main");
-    volume->addSubmenu("Boost");
+    volume->addParameter("Boost", TonexController::BOOST);
     volume->addBackBtn();
     cursor = volume;
     addSubmenu("Delay");
@@ -169,6 +159,14 @@ public:
   Menu* addSubmenu(const char* label) {
     if (submenuCount >= submenuLen) return nullptr;
     Menu* child = new Menu(label, this);
+    submenu[submenuCount++] = child;
+    return child;
+  }
+  Menu* addParameter(const char* label, int &val) {
+    if (submenuCount >= submenuLen) return nullptr;
+    Menu* child = new Menu(label, this);
+    child->parameter = val;
+    child->isParameter = true;
     submenu[submenuCount++] = child;
     return child;
   }
@@ -204,6 +202,9 @@ public:
               cursor = cursor->submenu[0];
               cursorLine = 0;
               renderMenu();
+            } else if (cursor->type == SUBMENU && cursor->isParameter) {
+                status = PARAM;
+                setIntParam(cursor->parameter);
             } else if (cursor->type == BACK) {
               if (parentNode->type == ROOT) {
                 cursor = submenu[0];
@@ -232,6 +233,35 @@ public:
           break;
       }
     }
+  }
+  void setIntParam(int val) {
+    //char* buffer
+    int max = 127;
+    if(val == 1){
+      cursor->parameter+=10;
+    }      
+    else{
+      cursor->parameter-=10;
+    }
+      
+
+    if(cursor->parameter<0){
+      cursor->parameter = 0;
+    }
+    
+    if(cursor->parameter>max){
+      cursor->parameter = max;
+    }
+      
+
+      int newVal = (cursor->parameter * 100) / max;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(cursor->name);
+      lcd.print(": ");
+      lcd.print(newVal);
+      renderProgressBar(newVal);
+    
   }
 };
 

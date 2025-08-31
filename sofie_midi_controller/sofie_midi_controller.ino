@@ -23,6 +23,8 @@ void setup() {
 }
 void loop() {
   int currentCLK = digitalRead(pinA);
+
+  //BOTAO DEVE IR PARA A CLASSE MENU TAMBEM
   debouncer.update();
   if (debouncer.fell()) {  //BOTAO
     switch (display.mode()) {
@@ -31,6 +33,9 @@ void loop() {
         break;
       case MENU:
         display.navigate(ENTER);
+        break;
+      case PARAM:
+        //display.navigate(ENTER);
         break;
     }
   }
@@ -55,6 +60,19 @@ void loop() {
     if (TonexController::patchHasChanged() || display.modeHasChanged())
       display.renderPresetScreen();
   }
-  //-----------------PRESET SCREEN----------------------
+  //-----------------PARAM SCREEN----------------------
+  if (display.mode() == PARAM) {
+    if (currentCLK != lastCLK && currentCLK == LOW) {
+      if (digitalRead(pinB) != currentCLK) {
+        display.setIntParam(1);
+      } else {
+        display.setIntParam(-1);
+      }
+    }
+  }
+
+
+
+
   lastCLK = currentCLK;
 }
